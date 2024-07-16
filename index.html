@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hourly Thread</title>
+</head>
+<body>
+    <nav><h1>Hourly Thread</h1></nav>
+    <p>
+        Only one person can post a message every hour!<br>
+        Whoever posts first will post the only message for the hour.
+    </p>
+    <div id="chat">
+        <div id="messages">
+            <button id="load">Load more</button>
+        </div>
+        <div class="chatbox">
+            <input type="text" id="message" placeholder="message...">
+            <span id="chars">0/200</span>
+            <button id="post">Post</button>
+        </div>
+    </div>
+    <div id="status"></div>
+    <div class="namedisplay">
+        Enter a name: <input id="name" type="text" placeholder="name">
+    </div>
+    <script>
+        const messages = document.getElementById("messages");
+        const message = document.getElementById("message");
+        const name = document.getElementById("name");
+        const post = document.getElementById("post");
+        const chars = document.getElementById("chars");
+        const load = document.getElementById("load");
+        const status = document.getElementById("status");
+        const url = "https://script.google.com/macros/s/AKfycbwe6SHFfgtCy5tAzvi5EJO-JCOkBWVzKbAMPjn33QH_K18IHhr364FAipaUoYQ95Zdc6Q/exec";
+        
+        function floorDate(d){
+            let fd = new Date(d.getFullYear(),d.getMonth(),d.getDay(),d.getHours());
+            return fd;
+        }
+        
+        var streak = localStorage.getItem("streak")||1;
+        var streakt = localStorage.getItem("streakt")||new Date();
+
+        function updatestreak(){
+            if (floorDate(streakt)!=floorDate(new Date())){
+                streak = 0;
+                streakt = new Date();
+                localStorage.setItem("streak",streak);
+                localStorage.setItem("streakt",streakt);
+            }
+        }
+
+        name.value = localStorage.getItem("name") || "unnamed";
+        name.addEventListener("change",()=>{
+            localStorage.setItem("name",name.value);
+        })
+
+        var page = 0;
+        async function loadmessages(){
+            let f = await fetch(`${url}?page${page}`);
+            let d = await f.json();
+            d.forEach((e)=>{
+                let m = document.createElement("p");
+                let username = m.appendChild(document.createElement("b"));
+                username.innerText = e[3];
+                username.style.paddingRight = "5px";
+                m.appendChild(document.createElement("span")).innerText = e[0];
+                m.appendChild(document.createElement("span")).style.flexGrow = "1";
+                m.appendChild(document.createElement("span")).innerText = new Date(e[1]).toLocaleString();
+                m.appendChild(document.createElement("b")).innerText = ":"+e[2];
+                messages.appendChild(m);
+            })
+            load.remove();
+            messages.insertBefore(load,messages.firstChild);
+            page+=1;
+            load.innerText = `Load more: ${page}`;
+        }
+
+        async function postmessage(){
+            message.value = "";
+            let f = await fetch(url,{
+                method:"POST",
+                body:JSON.stringify({
+                    "name":name.value,
+                    "text":message.value,
+                    "streak":streak
+                })
+            })
+
+            let ret = await f.text();
+            status.innerText = ret
+            if (ret!="Message posted"){
+                return;
+            }
+
+            updatestreak();
+            streak+=1;
+            streakt = new Date();
+            location.reload();
+        }
+
+        post.addEventListener("click",postmessage);
+        message.addEventListener("keydown",(e)=>{
+            if(e.key=="Enter") postmessage();
+        })
+
+        loadmessages();
+        load.addEventListener("click",loadmessages);
+    </script>
+    <style>
+        html{
+            padding:0;
+            margin:0;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        nav{
+            background-color: #eee;
+        }
+        #chat{
+            width:500px;
+            height:500px;
+            border:1px solid black;
+            display:flex;
+            flex-direction: column;
+        }
+        input{
+            flex-grow:1;
+            border:none;
+            outline:none;
+            height:30px;
+            padding:5px;
+        }
+        button{
+            border-radius: 0;
+            background-color: #eee;
+            border:none;
+            outline:none;
+            border-left:1px solid black;
+            padding-left:15px;
+            padding-right:15px;
+            cursor:pointer;
+        }
+        #messages{
+            display:flex;
+            flex-direction: column;
+            flex-grow:1;
+        }
+        .chatbox{
+            display: flex;
+            border-top:1px solid black;
+        }
+        h1{
+            padding:5px;
+            margin:0;
+        }
+        #chars{
+            display:flex;
+            flex-flow:column nowrap;
+            justify-content: center;
+            padding-right: 5px;
+        }
+        .namedisplay{
+            display:flex;
+            flex-flow:row nowrap;
+            align-items: center;
+        }
+        p{
+            width:100%;
+            display:flex;
+            flex-flow:row nowrap;
+        }
+    </style>
+</body>
+</html>
