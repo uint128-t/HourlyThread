@@ -58,7 +58,7 @@
         })
 
         var page = 0;
-        async function loadmessages(){
+        async function loadmessages(scrolltop = false){
             let f = await fetch(`${url}?page${page}`);
             let d = await f.json();
             d.forEach((e)=>{
@@ -76,6 +76,8 @@
             messages.insertBefore(load,messages.firstChild);
             page+=1;
             load.innerText = `Load more: ${page}`;
+            if (scrolltop)
+                messages.scroll(0,100000)
         }
 
         async function postmessage(){
